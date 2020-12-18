@@ -1,3 +1,15 @@
+## 2.5.0+1
+* Fix trailing , issue.
+
+## 2.5.0
+* App获取开放标签<wx-open-launch-app>中的extinfo数据
+
+## 2.4.2
+* Fix #317
+
+## 2.4.1
+* 修复Android 11无法分享图片的问题
+
 ## 2.4.0
 * 支持compressThumbnail
 * 升级OkHttp
