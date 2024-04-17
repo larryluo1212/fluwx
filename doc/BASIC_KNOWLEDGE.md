@@ -1,19 +1,29 @@
 ## Basic knowledge
 
 ### Response from WeChat
-Actually, almost every result from functions like `shareToWeChat` or `payWithWeChat` which call `sendRequest` in native doesn't makes sense. The `bool` value is the result of `sendRequest`.
+Actually, almost every result from functions like `share` or `pay` which call `sendRequest` in native doesn't makes sense. The `bool` value is the result of `sendRequest`.
 So if you want get the real result you shall do like this:
 
 ```dart
-  fluwx.weChatResponseEventHandler.listen((res) {
-    if (res is fluwx.WeChatPaymentResponse) {
-      // do something here
-    }
-  });
+    var listener = (response) {
+      if (response is WeChatAuthResponse) {
+
+      }
+    };
+    fluwx.addSubscriber(listener); // subscribe response from WeChat
+    fluwx.removeSubscriber(listener);// unsubscribe response from WeChat
 ```
-Take a look at subclasses of `BaseWeChatResponse` for help.
+
+Or 
+```dart
+    var cancelable = fluwx.addSubscriber(listener);
+    cancelable.cancel(); // unsubscribe response from WeChat
+```
+Take a look at subclasses of `WeChatResponse` for help.
 
 > NOTE: If you get `errCode = -1`, please read the WeChatSDK document for help. There are to many cases lead to that.
+
+
 
 ### Images in WeChat
 

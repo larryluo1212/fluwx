@@ -14,26 +14,12 @@
  * limitations under the License.
  */
 package com.jarvan.fluwx.handlers
-import com.tencent.mm.opensdk.modelmsg.ShowMessageFromWX
-import io.flutter.plugin.common.MethodChannel
+
+import android.app.Activity
 import com.tencent.mm.opensdk.modelbase.BaseReq
 
+
 object FluwxRequestHandler {
-    private var channel: MethodChannel? = null
 
-    fun setMethodChannel(channel: MethodChannel) {
-        FluwxRequestHandler.channel = channel
-    }
-
-    fun handleRequest(req: BaseReq) {
-        when (req) {
-            is ShowMessageFromWX.Req -> hanleWXShowMessageFromWX(req)
-        }
-    }
-
-    private  fun hanleWXShowMessageFromWX(req: ShowMessageFromWX.Req) {
-        val result = mapOf(
-                "extMsg" to req.message.messageExt)
-        channel?.invokeMethod("onWXShowMessageFromWX", result)
-    }
+    var customOnReqDelegate: ((baseReq: BaseReq, activity: Activity) -> Unit)? = null
 }

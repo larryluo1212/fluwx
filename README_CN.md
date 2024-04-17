@@ -1,15 +1,18 @@
 # Fluwx
 ![pub package](https://img.shields.io/pub/v/fluwx.svg)
-[![Build status](https://img.shields.io/cirrus/github/OpenFlutter/fluwx/master)](https://cirrus-ci.com/github/OpenFlutter/fluwx)
+![Build status](https://github.com/OpenFlutter/fluwx/actions/workflows/build_test.yml/badge.svg)
 ======
 
-![logo](https://github.com/JarvanMo/ImagesStore/blob/master/fluwx/fluwx_logo.png)
+![logo](https://gitee.com/OpenFlutter/resoures-repository/raw/master/fluwx/fluwx_logo.png)
 
 ## 什么是Fluwx
 `Fluwx` 是一个[微信SDK](https://developers.weixin.qq.com/doc/oplatform/Mobile_App/Resource_Center_Homepage.html)插件，它允许开发者调用
 [微信原生SDK ](https://developers.weixin.qq.com/doc/oplatform/Mobile_App/Resource_Center_Homepage.html).
 
-> 加入我们的QQ群: 892398530。
+
+> 加入我们的QQ群: 1003811176
+
+![QQGroup](https://gitee.com/OpenFlutter/resoures-repository/raw/master/common/flutter.png)
 
 ## 能力
 
@@ -19,14 +22,19 @@
 - 拉起小程序.
 - 订阅消息.
 - 打开微信.
+- 从微信标签打开应用
 
 ## 准备
 
-`Fluwx` 可以做很多工作但不是所有. 在集成之前，最好读一下[官方文档](https://open.weixin.qq.com/cgi-bin/showdocument?action=dir_list&t=resource/res_list&verify=1).  
+[迁移到V4指南](./doc/MIGRATE_TO_V4_CN.md)
+
+> 破坏性更新 ：从4.5.0起，当分享图片到微信时，如果不支持FileProvider方式分享，Fluwx不再尝试申请WRITE_EXTERNAL_STORAGE权限，这意味着你需要自己处理权限问题。
+
+
+`Fluwx` 可以做很多工作但不是所有. 在集成之前，最好读一下[官方文档](https://developers.weixin.qq.com/doc/oplatform/Mobile_App/Resource_Center_Homepage.html).  
  然后你才知道怎么生成签名，怎么使用universal link以及怎么添加URL schema等.
 
-> [收费视频教程点这里](https://study.163.com/course/introduction.htm?share=2&shareId=480000001896427&courseId=1209174838&_trace_c_p_k2_=e72467dc0df540579287a8ea996344a4)
->
+
 ## 安装
 
 在`pubspec.yaml` 文件中添加`fluwx`依赖:
@@ -39,23 +47,44 @@ dependencies:
 ```
 ![pub package](https://img.shields.io/pub/v/fluwx.svg)
 
-`Fluwx`，不带支付:
+不带支付的`Fluwx`:
 
-```yaml
-dependencies:
-  fluwx_no_pay: ^${latestVersion}
-```
-
-![pub package](https://img.shields.io/pub/v/fluwx_no_pay.svg)
+> 一些开发者并不需要在iOS端使用支付能力，此时您可以通过在[pubspec.yaml](./example/pubspec.yaml).
+![pub package](https://img.shields.io/pub/v/fluwx_no_pay.svg)中开启`no_pay`。
 
 > NOTE: 别忘记替换 ^${latestVersion} ！！！！
+
+## 配置
+
+`Fluwx` 从v4开始可以在`pubspec.yaml`的`fluwx`进行一些配置。具体可以参考[pubspec.yaml](./example/pubspec.yaml#L10)。
+
+> V4开始，iOS中的url_scheme，universal_link, LSApplicationQueriesSchemes可以不必开发者手动配动。只需在`pubspec.yaml`
+> 中填写即可。
+
+- app_id. 推荐. 它将用于生成iOS的url_scheme。这并不会替你初始化微信SDK，所以你还是自己调用`fluwx.registerApi`。
+- debug_logging. 可选. 把它设置成`true`可以开启日志。
+- flutter_activity. 可选. 这个通常是用于Android的冷启动。如果不设置任何值，`Fluwx`将尝试启动launcher activity.
+- universal_link. iOS 推荐. 它将用自动配置universal_link。
+- scene_delegate. iOS 可选. 使用 `AppDelegate` 还是使用 `SceneDelegate`. 查阅[官方文档](https://developers.weixin.qq.com/doc/oplatform/Mobile_App/Access_Guide/iOS.html)了解更多.
+
+* For iOS
+如果你在iOS上遇到了 `cannot load such file -- plist`, 请按照以下步骤进行操作：
+```shell
+# step.1 安装必要依赖
+sudo gem install plist
+# step.2 进行iOS文件夹(example/ios/,ios/)
+cd example/ios/
+# step.3 执行脚本
+pod install
+```
 
 ## 注册 WxAPI
 
 通过 `fluwx` 注册WxApi.
 
 ```dart
-registerWxApi(appId: "wxd930ea5d5a228f5f",universalLink: "https://your.univerallink.com/link/");
+Fluwx fluwx = Fluwx();
+fluwx.registerApi(appId: "wxd930ea5d5a228f5f",universalLink: "https://your.univerallink.com/link/");
 ```
 
 参数 `universalLink` 只在iOS上有用. 查看[文档](https://developers.weixin.qq.com/doc/oplatform/Mobile_App/Access_Guide/iOS.html) 以便了解如何生成通用链接.  
@@ -64,13 +93,15 @@ registerWxApi(appId: "wxd930ea5d5a228f5f",universalLink: "https://your.univerall
 对于Android, 可以查看[本文](https://developers.weixin.qq.com/doc/oplatform/Downloads/Android_Resource.html)以便了解怎么获取app签名.
 然后你需要知道release和debug时，app签名有什么区别。如果签名不对，你会得一个错误 `errCode = -1`.
 
+建议越早注册越好。
+
 ## 能力文档
 
 - [基础知识](./doc/BASIC_KNOWLEDGE_CN.md)
 - [分享](./doc/SHARE_CN.md)
 - [支付](./doc/PAYMENT_CN.md)
 - [登录](./doc/AUTH_CN.md)
-
+- [从微信标签打开应用](./doc/LAUNCH_APP_FROM_H5_CN.md)
 对于更多功能，可以查看源码。
 
 ## QA
@@ -80,10 +111,14 @@ registerWxApi(appId: "wxd930ea5d5a228f5f",universalLink: "https://your.univerall
 ## 捐助
 开源不易，请作者喝杯咖啡。
 
-<img src="https://github.com/JarvanMo/ImagesStore/blob/master/common/wx.jpeg" height="300">  <img src="https://github.com/JarvanMo/ImagesStore/blob/master/common/ali.jpeg" height="300">
+<img src="https://gitee.com/OpenFlutter/resoures-repository/raw/master/common/wx.jpeg" height="300">  <img src="https://gitee.com/OpenFlutter/resoures-repository/raw/master/common/ali.jpeg" height="300">
 
 ## 关注公众号
-![subscribe](https://github.com/JarvanMo/ImagesStore/blob/master/fluwx/wx_subscription.png)
+![subscribe](https://gitee.com/OpenFlutter/resoures-repository/raw/master/fluwx/wx_subscription.png)
+
+## 关注趋势
+
+![stars](https://starchart.cc/OpenFlutter/fluwx.svg)
 
 ## LICENSE
 

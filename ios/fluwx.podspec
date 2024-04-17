@@ -1,32 +1,115 @@
 #
 # To learn more about a Podspec see http://guides.cocoapods.org/syntax/podspec.html.
-# Run `pod lib lint fluwx.podspec' to validate before publishing.
+# Run `pod lib lint fluwx.podspec` to validate before publishing.
 #
+
+#
+# To learn more about a Podspec see http://guides.cocoapods.org/syntax/podspec.html.
+# Run `pod lib lint fluwx.podspec` to validate before publishing.
+#
+
+pubspec = YAML.load_file(File.join('..', 'pubspec.yaml'))
+library_version = pubspec['version'].gsub('+', '-')
+
+current_dir = Dir.pwd
+calling_dir = File.dirname(__FILE__)
+project_dir = calling_dir.slice(0..(calling_dir.index('/.symlinks')))
+symlinks_index = calling_dir.index('/ios/.symlinks')
+if !symlinks_index
+    symlinks_index = calling_dir.index('/.ios/.symlinks')
+end
+
+flutter_project_dir = calling_dir.slice(0..(symlinks_index))
+
+puts Psych::VERSION
+psych_version_gte_500 = Gem::Version.new(Psych::VERSION) >= Gem::Version.new('5.0.0')
+if psych_version_gte_500 == true
+    cfg = YAML.load_file(File.join(flutter_project_dir, 'pubspec.yaml'), aliases: true)
+else
+    cfg = YAML.load_file(File.join(flutter_project_dir, 'pubspec.yaml'))
+end
+
+logging_status = "WECHAT_LOGGING=0"
+
+if cfg['fluwx'] && cfg['fluwx']['debug_logging'] == true
+    logging_status = 'WECHAT_LOGGING=1'
+else
+    logging_status = 'WECHAT_LOGGING=0'
+end
+
+scene_delegate = ''
+if cfg['fluwx'] && cfg['fluwx']['ios'] && cfg['fluwx']['ios']['scene_delegate'] == true
+    scene_delegate = 'SCENE_DELEGATE=1'
+else
+    scene_delegate = ''
+end
+
+
+if cfg['fluwx'] && cfg['fluwx']['ios'] && cfg['fluwx']['ios']['no_pay'] == true
+    fluwx_subspec = 'no_pay'
+else
+    fluwx_subspec = 'pay'
+end
+Pod::UI.puts "using sdk with #{fluwx_subspec}"
+
+app_id = ''
+
+if cfg['fluwx'] && cfg['fluwx']['app_id']
+    app_id = cfg['fluwx']['app_id']
+end
+
+ignore_security = ''
+if cfg['fluwx'] && cfg['fluwx']['ios'] && cfg['fluwx']['ios']['ignore_security'] == true
+    ignore_security = '-i'
+end
+Pod::UI.puts "ignore_security: #{ignore_security}"
+universal_link = ''
+if cfg['fluwx'] && (cfg['fluwx']['ios']  && cfg['fluwx']['ios']['universal_link'])
+    universal_link = cfg['fluwx']['ios']['universal_link']
+end
+
+Pod::UI.puts "app_id: #{app_id} universal_link: #{universal_link}"
+system("ruby #{current_dir}/wechat_setup.rb #{ignore_security} -a #{app_id} -u #{universal_link} -p #{project_dir} -n Runner.xcodeproj")
+
 Pod::Spec.new do |s|
   s.name             = 'fluwx'
   s.version          = '0.0.1'
- s.summary          = 'A new Flutter plugin for Wechat SDK.'
+  s.summary          = 'The capability of implementing WeChat SDKs in Flutter. With Fluwx, developers can use WeChatSDK easily, such as sharing, payment, lanuch mini program and etc.'
   s.description      = <<-DESC
-A new Flutter plugin for Wechat SDK.
+The capability of implementing WeChat SDKs in Flutter. With Fluwx, developers can use WeChatSDK easily, such as sharing, payment, lanuch mini program and etc.
                        DESC
-  s.homepage         = 'https://github.com/OpenFlutter/fluwx'
+  s.homepage         = 'http://example.com'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'JarvanMo' => 'jarvan.mo@gmail.com' }
+  s.author           = { 'Your Company' => 'email@example.com' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
-  s.public_header_files = 'Classes/public/*.h'
-  s.static_framework = true
+  s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
-  s.dependency 'WechatOpenSDK', '1.8.7.1'
+  s.platform = :ios, '12.0'
+  s.static_framework = true
+  s.resource_bundles = {'fluwx_privacy' => ['Resources/PrivacyInfo.xcprivacy']}
+  s.default_subspec = fluwx_subspec
 
-# s.dependency 'OpenWeChatSDK','~> 1.8.3+10'
-#  s.xcconfig = { 'HEADER_SEARCH_PATHS' => "${PODS_ROOT}/Headers/Public/#{s.name}" }
-  s.frameworks = ["SystemConfiguration", "CoreTelephony","WebKit"]
-  s.libraries = ["z", "sqlite3.0", "c++"]
-  s.preserve_paths = 'Lib/*.a'
-  s.vendored_libraries = "**/*.a"
- s.ios.deployment_target = '8.0'
+  pod_target_xcconfig = {
+      'OTHER_LDFLAGS' => '$(inherited) -ObjC -all_load'
+  }
 
-  # Flutter.framework does not contain a i386 slice. Only x86_64 simulators are supported.
-  s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'VALID_ARCHS[sdk=iphonesimulator*]' => 'x86_64' }
+  s.subspec 'pay' do |sp|
+    sp.dependency 'WechatOpenSDK-XCFramework','~> 2.0.4'
+
+    pod_target_xcconfig["GCC_PREPROCESSOR_DEFINITIONS"] = "$(inherited) #{logging_status} #{scene_delegate}"
+
+    sp.pod_target_xcconfig = pod_target_xcconfig
+  end
+
+  s.subspec 'no_pay' do |sp|
+    sp.dependency 'OpenWeChatSDKNoPay','~> 2.0.4'
+    sp.frameworks = 'CoreGraphics', 'Security', 'WebKit'
+    sp.libraries = 'c++', 'z', 'sqlite3.0'
+    pod_target_xcconfig["GCC_PREPROCESSOR_DEFINITIONS"] = "$(inherited) NO_PAY=1 #{logging_status} #{scene_delegate}"
+    sp.pod_target_xcconfig = pod_target_xcconfig
+  end
+
+  # Flutter.framework does not contain a i386 slice.
+  s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386' }
 end

@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2020.  OpenFlutter Project
+ * Copyright (c) 2023.  OpenFlutter Project
  *
- *   Licensed to the Apache Software Foundation (ASF) under one or more contributor
+ * Licensed to the Apache Software Foundation (ASF) under one or more contributor
  * license agreements.  See the NOTICE file distributed with this work for
  * additional information regarding copyright ownership.  The ASF licenses this
  * file to you under the Apache License, Version 2.0 (the "License"); you may not
@@ -17,26 +17,20 @@
  * the License.
  */
 
-///[WXMiniProgramType.RELEASE]正式版
-///[WXMiniProgramType.TEST]测试版
-///[WXMiniProgramType.PREVIEW]预览版
-enum WXMiniProgramType { RELEASE, TEST, PREVIEW }
+/// [WXMiniProgramType.release]正式版
+/// [WXMiniProgramType.test]测试版
+/// [WXMiniProgramType.preview]预览版
+enum WXMiniProgramType {
+  release(0),
+  test(1),
+  preview(2);
 
-///[WeChatScene.SESSION]会话
-///[WeChatScene.TIMELINE]朋友圈
-///[WeChatScene.FAVORITE]收藏
-enum WeChatScene { SESSION, TIMELINE, FAVORITE }
+  final int value;
 
-extension MiniProgramTypeExtensions on WXMiniProgramType {
-  int toNativeInt() {
-    switch (this) {
-      case WXMiniProgramType.PREVIEW:
-        return 2;
-      case WXMiniProgramType.TEST:
-        return 1;
-      case WXMiniProgramType.RELEASE:
-        return 0;
-    }
-    return 0;
-  }
+  const WXMiniProgramType(this.value);
 }
+
+/// [WeChatScene.session]会话
+/// [WeChatScene.timeline]朋友圈
+/// [WeChatScene.favorite]收藏
+enum WeChatScene { session, timeline, favorite }

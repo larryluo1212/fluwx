@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.AssetFileDescriptor
 import android.net.Uri
-import android.text.TextUtils
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.jarvan.fluwx.io.*
@@ -15,7 +14,6 @@ import com.tencent.mm.opensdk.modelmsg.*
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
-import io.flutter.plugin.common.PluginRegistry
 import kotlinx.coroutines.*
 import java.io.File
 import java.util.*
@@ -36,30 +34,11 @@ internal class FluwxShareHandlerEmbedding(private val flutterAssets: FlutterPlug
         } else {
             flutterAssets.getAssetFilePathBySubpath(uri.path.orEmpty(), packageName)
         }
-
         context.assets.openFd(subPath)
     }
 
     override val job: Job = Job()
 
-    override var permissionHandler: PermissionHandler? = null
-}
-
-internal class FluwxShareHandlerCompat(private val registrar: PluginRegistry.Registrar) : FluwxShareHandler {
-    override val assetFileDescriptor: (String) -> AssetFileDescriptor = {
-        val uri = Uri.parse(it)
-        val packageName = uri.getQueryParameter("package")
-        val key = if (TextUtils.isEmpty(packageName)) {
-            registrar.lookupKeyForAsset(uri.path)
-        } else {
-            registrar.lookupKeyForAsset(uri.path, packageName)
-        }
-        context.assets.openFd(key)
-    }
-
-    override val context: Context = registrar.context().applicationContext
-    override val job: Job = Job()
-    override var permissionHandler: PermissionHandler? = null
 }
 
 internal interface FluwxShareHandler : CoroutineScope {
@@ -139,11 +118,7 @@ internal interface FluwxShareHandler : CoroutineScope {
                         if (supportFileProvider && targetHigherThanN) {
                             setImagePath(getFileContentUri(sourceByteArray.toCacheFile(context, sourceImage.suffix)))
                         } else {
-                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                                setImagePath(sourceByteArray.toExternalCacheFile(context, sourceImage.suffix)?.absolutePath)
-                            } else {
-                                permissionHandler?.requestStoragePermission()
-                            }
+                            setImagePath(sourceByteArray.toExternalCacheFile(context, sourceImage.suffix)?.absolutePath)
                         }
                     }
                 }
@@ -248,11 +223,7 @@ internal interface FluwxShareHandler : CoroutineScope {
                 if (supportFileProvider && targetHigherThanN) {
                     setFilePath(getFileContentUri(sourceByteArray.toCacheFile(context, sourceFile.suffix)))
                 } else {
-                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                        filePath = sourceByteArray.toExternalCacheFile(context, sourceFile.suffix)?.absolutePath
-                    } else {
-                        permissionHandler?.requestStoragePermission()
-                    }
+                    filePath = sourceByteArray.toExternalCacheFile(context, sourceFile.suffix)?.absolutePath
                 }
             }
 
@@ -287,6 +258,9 @@ internal interface FluwxShareHandler : CoroutineScope {
     //    SESSION, TIMELINE, FAVORITE
     private fun setCommonArguments(call: MethodCall, req: SendMessageToWX.Req, msg: WXMediaMessage) {
         msg.messageAction = call.argument("messageAction")
+        call.argument<String?>("msgSignature")?.let {
+            msg.msgSignature = it
+        }
         msg.messageExt = call.argument("messageExt")
         msg.mediaTagName = call.argument("mediaTagName")
         msg.title = call.argument(keyTitle)
@@ -317,7 +291,7 @@ internal interface FluwxShareHandler : CoroutineScope {
 
     }
 
-    private val supportFileProvider: Boolean get() = WXAPiHandler.wxApi?.wxAppSupportAPI ?: 0 >= 0x27000D00
+    private val supportFileProvider: Boolean get() = (WXAPiHandler.wxApi?.wxAppSupportAPI ?: 0) >= 0x27000D00
     private val targetHigherThanN: Boolean get() = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N
 
     val context: Context
@@ -328,8 +302,6 @@ internal interface FluwxShareHandler : CoroutineScope {
         get() = Dispatchers.Main + job
 
     val job: Job
-
-    var permissionHandler: PermissionHandler?
 
     fun onDestroy() = job.cancel()
 }
